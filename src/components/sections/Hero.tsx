@@ -13,7 +13,7 @@ const ShoeShowcase = dynamic(
 export function Hero() {
   return (
     <section id="top" className="relative min-h-[100svh] flex items-center container-x pt-28 pb-16 overflow-hidden hero-glow">
-      <div className="max-page relative z-10 w-full grid gap-10 lg:grid-cols-[1.05fr_1fr] items-center">
+      <div className="max-page relative z-10 w-full grid gap-12 lg:grid-cols-[0.9fr_1.1fr] items-center">
         <div>
           <motion.div
             className="eyebrow mb-8"
@@ -25,7 +25,7 @@ export function Hero() {
             38.5K on the gram · daily drops since 2018
           </motion.div>
 
-          <h1 className="font-display text-ink leading-[0.86] text-[clamp(58px,11vw,170px)]">
+          <h1 className="font-display text-ink leading-[0.86] text-[clamp(48px,8.5vw,130px)]">
             {[
               ["Real ", "kicks."],
               ["Real ", "video."],

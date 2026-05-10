@@ -1,13 +1,22 @@
 "use client";
 
-import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { Environment, ContactShadows, PresentationControls, Float, Html } from "@react-three/drei";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import {
+  Environment,
+  ContactShadows,
+  PresentationControls,
+  Float,
+  Html,
+  useGLTF,
+  Center,
+} from "@react-three/drei";
+import { Suspense, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 const SHOE_GLB =
   "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/MaterialsVariantsShoe/glTF-Binary/MaterialsVariantsShoe.glb";
+
+useGLTF.preload(SHOE_GLB);
 
 const VARIANTS = [
   { label: "Heritage", swatch: "#1a1a1a" },
@@ -16,19 +25,12 @@ const VARIANTS = [
 ] as const;
 
 function Shoe({ variant }: { variant: number }) {
-  const gltf = useLoader(GLTFLoader, SHOE_GLB);
+  const { scene } = useGLTF(SHOE_GLB) as unknown as { scene: THREE.Group };
   const ref = useRef<THREE.Group>(null);
 
-  const variants = useMemo(() => {
-    // GLTF MaterialsVariantsShoe has KHR_materials_variants extension
-    const userData = gltf.userData as { variants?: Array<{ name: string }> };
-    return userData.variants ?? [];
-  }, [gltf]);
-
-  // Apply variant on change
+  // The KHR_materials_variants extension stores per-mesh variant materials in userData
   useEffect(() => {
-    if (!variants.length) return;
-    gltf.scene.traverse((o) => {
+    scene.traverse((o) => {
       if (!(o instanceof THREE.Mesh)) return;
       const meshUser = o.userData as {
         variantMaterials?: Array<{ material: THREE.Material; variants: number[] }>;
@@ -40,26 +42,31 @@ function Shoe({ variant }: { variant: number }) {
       if (match) o.material = match.material;
       else if (meshUser.originalMaterial) o.material = meshUser.originalMaterial;
     });
-  }, [variant, gltf, variants]);
+  }, [variant, scene]);
 
-  // Apply environment + tweak materials for premium look
+  // Cast / receive shadows for premium ground contact
   useEffect(() => {
-    gltf.scene.traverse((o) => {
+    scene.traverse((o) => {
       if (o instanceof THREE.Mesh) {
         o.castShadow = true;
         o.receiveShadow = true;
       }
     });
-  }, [gltf]);
+  }, [scene]);
 
+  // Slow auto-rotation when user isn't dragging
   useFrame((_, delta) => {
     if (!ref.current) return;
     ref.current.rotation.y += delta * 0.18;
   });
 
   return (
-    <group ref={ref} position={[0, -0.04, 0]} scale={9} rotation={[0, Math.PI * 0.15, 0]}>
-      <primitive object={gltf.scene} />
+    <group ref={ref}>
+      {/* Center auto-positions the model around origin so PresentationControls rotates around its center */}
+      <Center>
+        {/* Model is ~30cm long; scale 14 gives ~4.2 unit length — nicely fills our viewport */}
+        <primitive object={scene} scale={14} />
+      </Center>
     </group>
   );
 }
@@ -74,52 +81,95 @@ function LoaderFallback() {
   );
 }
 
+function StudioLights() {
+  return (
+    <>
+      <ambientLight intensity={0.35} />
+      <spotLight
+        position={[4, 6, 4]}
+        angle={0.3}
+        penumbra={1}
+        intensity={2.2}
+        castShadow
+        color="#fff8ec"
+        shadow-mapSize={[2048, 2048]}
+      />
+      <spotLight
+        position={[-4, 3, -2]}
+        angle={0.4}
+        penumbra={1}
+        intensity={1.0}
+        color="#e63946"
+      />
+      <spotLight
+        position={[0, -2, 3]}
+        angle={0.5}
+        penumbra={1}
+        intensity={0.6}
+        color="#ff5a1f"
+      />
+    </>
+  );
+}
+
 export function ShoeShowcase() {
   const [variant, setVariant] = useState(0);
 
   return (
-    <div className="relative w-full h-[58vh] sm:h-[68vh] lg:h-full lg:min-h-[640px]">
+    <div className="relative w-full aspect-[4/5] sm:aspect-square min-h-[460px] sm:min-h-[560px] lg:min-h-[680px]">
+      {/* Soft ground glow under the shoe for premium feel */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-[8%] h-[60%] pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at center bottom, rgba(230, 57, 70, 0.18), transparent 60%)",
+        }}
+      />
+
       <Canvas
         shadows
-        camera={{ position: [0, 0.2, 1.4], fov: 32 }}
         dpr={[1, 1.6]}
+        camera={{ position: [0, 1, 5.5], fov: 28 }}
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         style={{ background: "transparent" }}
       >
-        <ambientLight intensity={0.25} />
-        <spotLight position={[3, 5, 3]} angle={0.35} penumbra={1} intensity={1.6} castShadow color="#fff8ec" />
-        <spotLight position={[-3, 2, -2]} angle={0.4} penumbra={1} intensity={0.8} color="#e63946" />
+        <StudioLights />
         <Suspense fallback={<LoaderFallback />}>
           <PresentationControls
             global
-            polar={[-0.25, 0.25]}
+            polar={[-0.35, 0.35]}
             azimuth={[-Math.PI, Math.PI]}
+            speed={1.4}
+            zoom={1}
             snap
           >
-            <Float floatIntensity={0.3} rotationIntensity={0.1} speed={1.4}>
-              <Shoe variant={variant} />
+            <Float floatIntensity={0.45} rotationIntensity={0.18} speed={1.6}>
+              <group rotation={[0, Math.PI * 0.18, 0]}>
+                <Shoe variant={variant} />
+              </group>
             </Float>
           </PresentationControls>
           <ContactShadows
-            position={[0, -0.32, 0]}
-            opacity={0.55}
-            scale={6}
-            blur={2.6}
-            far={1}
+            position={[0, -1.45, 0]}
+            opacity={0.7}
+            scale={9}
+            blur={2.4}
+            far={2}
             resolution={1024}
             color="#000"
           />
-          <Environment preset="studio" environmentIntensity={0.6} />
+          <Environment preset="studio" environmentIntensity={0.7} />
         </Suspense>
       </Canvas>
 
       {/* Variant swatch picker */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-bg-2/70 backdrop-blur-md border border-line px-4 py-2.5 rounded-full">
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-bg-2/80 backdrop-blur-md border border-line px-4 py-2.5 rounded-full z-10">
         {VARIANTS.map((v, i) => (
           <button
             key={v.label}
             onClick={() => setVariant(i)}
-            className="group flex items-center gap-2"
+            className="group flex items-center gap-2 cursor-pointer"
             aria-label={`switch to ${v.label} variant`}
             aria-pressed={variant === i}
           >
@@ -128,7 +178,7 @@ export function ShoeShowcase() {
               style={{
                 background: v.swatch,
                 borderColor: variant === i ? "var(--color-crimson)" : "rgba(248,246,240,0.25)",
-                transform: variant === i ? "scale(1.1)" : "scale(1)",
+                transform: variant === i ? "scale(1.12)" : "scale(1)",
               }}
             />
             <span
@@ -144,8 +194,9 @@ export function ShoeShowcase() {
 
       {/* Drag hint */}
       <div className="absolute top-4 right-4 font-mono text-[10px] tracking-[0.28em] uppercase text-ink-3 hidden sm:block">
-        drag to rotate · scroll to flow
+        drag to rotate
       </div>
     </div>
   );
 }
+
