@@ -9,6 +9,7 @@ import {
   Html,
   useGLTF,
   Center,
+  Bounds,
 } from "@react-three/drei";
 import { Suspense, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
@@ -104,10 +105,8 @@ function Shoe({ variantIdx }: { variantIdx: number }) {
   return (
     <group ref={ref}>
       <Center>
-        {/* MaterialsVariantsShoe is ~30cm long in scene units (0.3 units).
-            Scale 7 → ~2.1 unit length. With FOV 30 / camera z=6, visible width is ~3.2 units.
-            That gives ~35% breathing room — never crops, even when float / rotation pushes the bbox. */}
-        <primitive object={scene} scale={7} />
+        {/* Bounds at the parent level auto-frames this regardless of scale or aspect ratio. */}
+        <primitive object={scene} scale={1} />
       </Center>
     </group>
   );
@@ -194,13 +193,13 @@ export function ShoeShowcase() {
   const isMobile = useIsMobile();
 
   return (
-    <div className="relative w-full aspect-square min-h-[420px] sm:min-h-[560px] lg:min-h-[700px]">
+    <div className="relative w-full h-full min-h-[100svh]">
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 bottom-[6%] h-[60%] pointer-events-none"
+        className="absolute inset-x-0 bottom-[10%] h-[55%] pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse at center bottom, rgba(230, 57, 70, 0.20), transparent 60%)",
+            "radial-gradient(ellipse at center bottom, rgba(230, 57, 70, 0.22), transparent 60%)",
         }}
       />
 
@@ -217,25 +216,29 @@ export function ShoeShowcase() {
         <Canvas
           shadows
           dpr={[1, 1.6]}
-          camera={{ position: [0, 0.5, 6], fov: 30 }}
+          camera={{ position: [0, 0.2, 5], fov: 30 }}
           gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
           style={{ background: "transparent" }}
         >
           <StudioLights />
           <Suspense fallback={<LoaderFallback />}>
             <PresentationControls global polar={[-0.35, 0.35]} azimuth={[-Math.PI, Math.PI]} speed={1.4} zoom={1} snap>
-              <Float floatIntensity={0.3} rotationIntensity={0.12} speed={1.4}>
-                <group rotation={[0, Math.PI * 0.22, 0]}>
-                  <Shoe variantIdx={variant} />
-                </group>
-              </Float>
+              {/* Bounds auto-fits the camera distance so the shoe always fills ~70% of the viewport,
+                  regardless of canvas aspect ratio. margin=1.4 gives ~40% breathing room. */}
+              <Bounds fit clip observe margin={1.4}>
+                <Float floatIntensity={0.25} rotationIntensity={0.1} speed={1.3}>
+                  <group rotation={[0, Math.PI * 0.22, 0]}>
+                    <Shoe variantIdx={variant} />
+                  </group>
+                </Float>
+              </Bounds>
             </PresentationControls>
             <ContactShadows
-              position={[0, -0.75, 0]}
+              position={[0, -1.05, 0]}
               opacity={0.65}
-              scale={6}
-              blur={2.2}
-              far={1.5}
+              scale={8}
+              blur={2.4}
+              far={2}
               resolution={1024}
               color="#000"
             />
@@ -244,9 +247,9 @@ export function ShoeShowcase() {
         </Canvas>
       )}
 
-      {/* Variant swatch picker — only show if actually 3D */}
+      {/* Variant swatch picker — only show if actually 3D. Positioned above the bottom CTAs in Hero. */}
       {!isMobile && (
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-bg-2/85 backdrop-blur-md border border-line px-4 py-2.5 rounded-full z-10">
+        <div className="absolute bottom-[170px] sm:bottom-[200px] left-1/2 -translate-x-1/2 flex items-center gap-3 bg-bg-2/85 backdrop-blur-md border border-line px-4 py-2.5 rounded-full z-30">
           {VARIANTS.map((v, i) => (
             <button
               key={v.label}
@@ -276,7 +279,7 @@ export function ShoeShowcase() {
       )}
 
       {!isMobile && (
-        <div className="absolute top-4 right-4 font-mono text-[10px] tracking-[0.28em] uppercase text-ink-3">
+        <div className="absolute top-28 right-8 font-mono text-[10px] tracking-[0.28em] uppercase text-ink-3 z-30 pointer-events-none">
           drag to rotate
         </div>
       )}
