@@ -104,7 +104,10 @@ function Shoe({ variantIdx }: { variantIdx: number }) {
   return (
     <group ref={ref}>
       <Center>
-        <primitive object={scene} scale={14} />
+        {/* MaterialsVariantsShoe is ~30cm long in scene units (0.3 units).
+            Scale 7 → ~2.1 unit length. With FOV 30 / camera z=6, visible width is ~3.2 units.
+            That gives ~35% breathing room — never crops, even when float / rotation pushes the bbox. */}
+        <primitive object={scene} scale={7} />
       </Center>
     </group>
   );
@@ -214,25 +217,25 @@ export function ShoeShowcase() {
         <Canvas
           shadows
           dpr={[1, 1.6]}
-          camera={{ position: [0, 1, 5.5], fov: 28 }}
+          camera={{ position: [0, 0.5, 6], fov: 30 }}
           gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
           style={{ background: "transparent" }}
         >
           <StudioLights />
           <Suspense fallback={<LoaderFallback />}>
             <PresentationControls global polar={[-0.35, 0.35]} azimuth={[-Math.PI, Math.PI]} speed={1.4} zoom={1} snap>
-              <Float floatIntensity={0.45} rotationIntensity={0.18} speed={1.6}>
-                <group rotation={[0, Math.PI * 0.18, 0]}>
+              <Float floatIntensity={0.3} rotationIntensity={0.12} speed={1.4}>
+                <group rotation={[0, Math.PI * 0.22, 0]}>
                   <Shoe variantIdx={variant} />
                 </group>
               </Float>
             </PresentationControls>
             <ContactShadows
-              position={[0, -1.45, 0]}
-              opacity={0.7}
-              scale={9}
-              blur={2.4}
-              far={2}
+              position={[0, -0.75, 0]}
+              opacity={0.65}
+              scale={6}
+              blur={2.2}
+              far={1.5}
               resolution={1024}
               color="#000"
             />
