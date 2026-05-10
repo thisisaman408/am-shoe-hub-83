@@ -14,8 +14,9 @@ export function Hero() {
       id="top"
       className="relative min-h-[100svh] overflow-hidden hero-glow"
     >
-      {/* The shoe canvas fills the entire section — it's the centerpiece */}
-      <div className="absolute inset-0 z-0">
+      {/* The shoe canvas fills the entire section — translated up ~7% so the shoe
+          sits in the upper-middle of the viewport, leaving room for the headline below. */}
+      <div className="absolute inset-0 z-0" style={{ transform: "translateY(-7%)" }}>
         <ShoeShowcase />
       </div>
 

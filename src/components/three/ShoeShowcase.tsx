@@ -198,16 +198,12 @@ export function ShoeShowcase() {
                 on the bbox midpoint, the visible shoe (at y=0) sits in the UPPER half of the
                 viewport — "a little above" center. Same composition on every screen size.
               */}
-              <Bounds fit clip observe margin={1.15}>
+              <Bounds fit clip observe margin={1.25}>
                 <Float floatIntensity={0.22} rotationIntensity={0.1} speed={1.3}>
                   <group rotation={[0, Math.PI * 0.22, 0]}>
                     <Shoe variantIdx={variant} />
                   </group>
                 </Float>
-                {/* invisible spacer — shifts apparent shoe position upward */}
-                <mesh position={[0, -1.6, 0]} visible={false}>
-                  <boxGeometry args={[0.01, 0.01, 0.01]} />
-                </mesh>
               </Bounds>
             </PresentationControls>
             {enableShadows && (
